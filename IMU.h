@@ -678,6 +678,6 @@ struct IMU
 
 struct Angle
 {
-  double x;
-  double y;
+  double roll;
+  double pitch;
 };

@@ -20,9 +20,9 @@ void loop()
   
   Angle_val = AngleCalc();
   
-  Serial.print(Angle_val.x,6);
+  Serial.print(Angle_val.roll,3);
   Serial.print(F(", "));
-  Serial.print(Angle_val.y,6);
+  Serial.print(Angle_val.pitch,3);
   Serial.println(F(""));
   
   delay(10);
@@ -89,8 +89,8 @@ struct Angle AngleCalc(){
    
    struct Angle Angle_val;
    
-   Angle_val.x = angle_x_comp;
-   Angle_val.y = angle_y_comp;
+   Angle_val.roll = angle_x_comp;
+   Angle_val.pitch = angle_y_comp;
   
    return Angle_val;
 }
