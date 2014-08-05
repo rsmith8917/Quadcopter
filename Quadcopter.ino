@@ -9,7 +9,39 @@ double y_gyro_offset = 0;
 
 void setup()
 {      
-  IMU_init();
+    initAngleCalc();
+}
+
+
+void loop()
+{
+  
+  struct Angle Angle_val;
+  
+  Angle_val = AngleCalc();
+  
+  Serial.print(Angle_val.x,6);
+  Serial.print(F(", "));
+  Serial.print(Angle_val.y,6);
+  Serial.println(F(""));
+  
+  delay(10);
+}
+
+
+
+
+
+//======================================
+//
+//    FUNCTIONS
+//
+//======================================
+
+
+
+void initAngleCalc(){
+   IMU_init();
  
   struct IMU IMU_val;
   
@@ -20,13 +52,12 @@ void setup()
   delay(5);
   };
   x_gyro_offset = x_gyro_offset/10;
-  y_gyro_offset = y_gyro_offset/10;
+  y_gyro_offset = y_gyro_offset/10; 
 }
 
 
-void loop()
-{
-  struct IMU IMU_val;
+struct Angle AngleCalc(){
+   struct IMU IMU_val;
   static double angle_x_accel=0;
   static double angle_x_gyro=0;
   static double angle_x_comp=0;
@@ -41,8 +72,8 @@ void loop()
   angle_y_accel = (atan2(-IMU_val.x_accel,sqrt(IMU_val.y_accel*IMU_val.y_accel+IMU_val.z_accel*IMU_val.z_accel)))*(180/3.1415926); //Accel Angle Calculation
   IMU_val.x_gyro = (IMU_val.x_gyro-x_gyro_offset)*2.3;  //Gyro Calibration
   IMU_val.y_gyro = (IMU_val.y_gyro-y_gyro_offset)*2.098;  //Gyro Calibration
-  angle_x_gyro = ((IMU_val.x_gyro)*0.01)+angle_x_gyro;  //Gyro Angle Calculation (For comparison only)
-  angle_y_gyro = ((IMU_val.y_gyro)*0.01)+angle_y_gyro;  //Gyro Angle Calculation (For comparison only)
+  //angle_x_gyro = ((IMU_val.x_gyro)*0.01)+angle_x_gyro;  //Gyro Angle Calculation (For comparison only)
+  //angle_y_gyro = ((IMU_val.y_gyro)*0.01)+angle_y_gyro;  //Gyro Angle Calculation (For comparison only)
   angle_x_comp = (((IMU_val.x_gyro*0.01)+angle_x_comp)*0.98)+(angle_x_accel*0.02);  //Complementary Filter
   angle_y_comp = (((IMU_val.y_gyro*0.01)+angle_y_comp)*0.98)+(angle_y_accel*0.02);  //Complementary Filter
  
@@ -55,25 +86,14 @@ void loop()
      
    angle_x_comp_prev = angle_x_comp;
    angle_y_comp_prev = angle_y_comp;
-
-  Serial.print(angle_x_accel,6);
-  Serial.print(F(", "));
-  Serial.print(angle_x_gyro,6);
-  Serial.print(F(", "));
-  Serial.print(angle_x_comp,6);
-  Serial.print(F(", "));
-  Serial.print(angle_y_accel,6);
-  Serial.print(F(", "));
-  Serial.print(angle_y_gyro,6);
-  Serial.print(F(", "));
-  Serial.print(angle_y_comp,6);
-  Serial.println(F(""));
+   
+   struct Angle Angle_val;
+   
+   Angle_val.x = angle_x_comp;
+   Angle_val.y = angle_y_comp;
   
-  delay(10);
+   return Angle_val;
 }
-
-
-
 
 
 void IMU_init(){

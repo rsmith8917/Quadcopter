@@ -675,3 +675,9 @@ struct IMU
   double y_gyro;
   double z_gyro;
 };
+
+struct Angle
+{
+  double x;
+  double y;
+};
