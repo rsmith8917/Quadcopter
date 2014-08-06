@@ -680,4 +680,8 @@ struct Angle
 {
   double roll;
   double pitch;
+  double roll_accel;
+  double roll_gyro;
+  double pitch_accel;
+  double pitch_gyro;
 };

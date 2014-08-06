@@ -1,3 +1,5 @@
+#include <PID_v1.h>
+
 #include <Wire.h>
 #include <math.h>
 
@@ -5,27 +7,54 @@
 
 double x_gyro_offset = 0;
 double y_gyro_offset = 0;
+double Roll_Setpoint = 0;
+double Pitch_Setpoint = 0;
+int Kp = 10;
+int Ki = 0;
+int Kd = 0;
+int OutputHiLim = 100;
+int OutputLoLim = -100;
+double Pitch_Output;
+double Roll_Output;
+struct Angle Angle_val;
+unsigned long init_time = micros();
 
+PID pitchController(&Angle_val.pitch, &Pitch_Output, &Pitch_Setpoint,Kp,Ki,Kd, DIRECT);
+PID rollController(&Angle_val.roll, &Roll_Output, &Roll_Setpoint,Kp,Ki,Kd, DIRECT);
 
 void setup()
 {      
     initAngleCalc();
+    pitchController.SetMode(AUTOMATIC);
+    pitchController.SetSampleTime(10);
+    pitchController.SetOutputLimits(OutputLoLim,OutputHiLim);
+    rollController.SetMode(AUTOMATIC);
+    rollController.SetOutputLimits(OutputLoLim,OutputHiLim);
+    rollController.SetSampleTime(10);
+    
 }
 
 
 void loop()
 {
   
-  struct Angle Angle_val;
-  
+  if(micros()-init_time >= 10000)
+  {
   Angle_val = AngleCalc();
+  pitchController.Compute();
+  rollController.Compute();
   
-  Serial.print(Angle_val.roll,3);
+  Serial.print(Angle_val.roll_accel,3);
   Serial.print(F(", "));
-  Serial.print(Angle_val.pitch,3);
+  Serial.print(Angle_val.roll_gyro,3);
+  Serial.print(F(", "));
+  Serial.print(Angle_val.roll,3);
   Serial.println(F(""));
+  init_time = micros();
+  }
   
-  delay(10);
+  
+  //delay(1);
 }
 
 
@@ -70,10 +99,10 @@ struct Angle AngleCalc(){
 
   angle_x_accel = (atan2(IMU_val.y_accel,IMU_val.z_accel))*(180/3.1415926); //Accel Angle Calculation
   angle_y_accel = (atan2(-IMU_val.x_accel,sqrt(IMU_val.y_accel*IMU_val.y_accel+IMU_val.z_accel*IMU_val.z_accel)))*(180/3.1415926); //Accel Angle Calculation
-  IMU_val.x_gyro = (IMU_val.x_gyro-x_gyro_offset)*2.3;  //Gyro Calibration
-  IMU_val.y_gyro = (IMU_val.y_gyro-y_gyro_offset)*2.098;  //Gyro Calibration
-  //angle_x_gyro = ((IMU_val.x_gyro)*0.01)+angle_x_gyro;  //Gyro Angle Calculation (For comparison only)
-  //angle_y_gyro = ((IMU_val.y_gyro)*0.01)+angle_y_gyro;  //Gyro Angle Calculation (For comparison only)
+  IMU_val.x_gyro = (IMU_val.x_gyro-x_gyro_offset)*1.5;  //Gyro Calibration
+  IMU_val.y_gyro = (IMU_val.y_gyro-y_gyro_offset)*.15;  //Gyro Calibration
+  angle_x_gyro = ((IMU_val.x_gyro)*0.01)+angle_x_gyro;  //Gyro Angle Calculation (For comparison only)
+  angle_y_gyro = ((IMU_val.y_gyro)*0.01)+angle_y_gyro;  //Gyro Angle Calculation (For comparison only)
   angle_x_comp = (((IMU_val.x_gyro*0.01)+angle_x_comp)*0.98)+(angle_x_accel*0.02);  //Complementary Filter
   angle_y_comp = (((IMU_val.y_gyro*0.01)+angle_y_comp)*0.98)+(angle_y_accel*0.02);  //Complementary Filter
  
@@ -91,6 +120,10 @@ struct Angle AngleCalc(){
    
    Angle_val.roll = angle_x_comp;
    Angle_val.pitch = angle_y_comp;
+   Angle_val.roll_accel = angle_x_accel;
+   Angle_val.pitch_accel = angle_y_accel;
+   Angle_val.roll_gyro = angle_x_gyro;
+   Angle_val.pitch_gyro = angle_y_gyro;
   
    return Angle_val;
 }
