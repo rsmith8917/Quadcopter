@@ -1,9 +1,11 @@
 #include <PID_v1.h>
-
 #include <Wire.h>
 #include <math.h>
-
+#include <Adafruit_Sensor.h>
+#include <Adafruit_HMC5883_U.h>
 #include "IMU.h"
+
+Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
 
 double x_gyro_offset = 0;
 double y_gyro_offset = 0;
@@ -31,6 +33,7 @@ void setup()
     rollController.SetMode(AUTOMATIC);
     rollController.SetOutputLimits(OutputLoLim,OutputHiLim);
     rollController.SetSampleTime(10);
+    mag.begin();
     
 }
 
@@ -44,11 +47,29 @@ void loop()
   pitchController.Compute();
   rollController.Compute();
   
+  sensors_event_t event; 
+  mag.getEvent(&event);
+  float heading = atan2(event.magnetic.y, event.magnetic.x);
+  float declinationAngle = 0.22;
+  heading += declinationAngle;
+  // Correct for when signs are reversed.
+  if(heading < 0)
+    heading += 2*PI;
+    
+  // Check for wrap due to addition of declination.
+  if(heading > 2*PI)
+    heading -= 2*PI;
+   
+  // Convert radians to degrees for readability.
+  float headingDegrees = heading * 180/M_PI; 
+  
   Serial.print(Angle_val.roll_accel,3);
   Serial.print(F(", "));
   Serial.print(Angle_val.roll_gyro,3);
   Serial.print(F(", "));
   Serial.print(Angle_val.roll,3);
+  Serial.print(F(", "));
+  Serial.print(headingDegrees,3);
   Serial.println(F(""));
   init_time = micros();
   }
