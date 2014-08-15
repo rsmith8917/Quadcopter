@@ -11,30 +11,37 @@ double x_gyro_offset = 0;
 double y_gyro_offset = 0;
 double Roll_Setpoint = 0;
 double Pitch_Setpoint = 0;
-int Kp = 10;
-int Ki = 0;
-int Kd = 0;
+double Yaw_Setpoint = 0;
+
+struct Gain Roll_Gains = {10,0,0};
+struct Gain Pitch_Gains = {10,0,0};
+struct Gain Yaw_Gains = {10,0,0};
+
 int OutputHiLim = 100;
 int OutputLoLim = -100;
 double Pitch_Output;
 double Roll_Output;
+double Yaw_Output;
 struct Angle Angle_val;
 unsigned long init_time = micros();
 
-PID pitchController(&Angle_val.pitch, &Pitch_Output, &Pitch_Setpoint,Kp,Ki,Kd, DIRECT);
-PID rollController(&Angle_val.roll, &Roll_Output, &Roll_Setpoint,Kp,Ki,Kd, DIRECT);
+PID pitchController(&Angle_val.pitch, &Pitch_Output, &Pitch_Setpoint,Pitch_Gains.Kp,Pitch_Gains.Ki,Pitch_Gains.Kd, DIRECT);
+PID rollController(&Angle_val.roll, &Roll_Output, &Roll_Setpoint,Roll_Gains.Kp,Roll_Gains.Ki,Roll_Gains.Kd, DIRECT);
+PID yawController(&Angle_val.yaw, &Yaw_Output, &Yaw_Setpoint,Yaw_Gains.Kp,Yaw_Gains.Ki,Yaw_Gains.Kd, DIRECT);
 
 void setup()
 {      
     initAngleCalc();
+    
     pitchController.SetMode(AUTOMATIC);
     pitchController.SetSampleTime(10);
     pitchController.SetOutputLimits(OutputLoLim,OutputHiLim);
     rollController.SetMode(AUTOMATIC);
     rollController.SetOutputLimits(OutputLoLim,OutputHiLim);
     rollController.SetSampleTime(10);
-    mag.begin();
-    
+    yawController.SetMode(AUTOMATIC);
+    yawController.SetOutputLimits(OutputLoLim,OutputHiLim);
+    yawController.SetSampleTime(10);
 }
 
 
@@ -46,22 +53,7 @@ void loop()
   Angle_val = AngleCalc();
   pitchController.Compute();
   rollController.Compute();
-  
-  sensors_event_t event; 
-  mag.getEvent(&event);
-  float heading = atan2(event.magnetic.y, event.magnetic.x);
-  float declinationAngle = 0.22;
-  heading += declinationAngle;
-  // Correct for when signs are reversed.
-  if(heading < 0)
-    heading += 2*PI;
-    
-  // Check for wrap due to addition of declination.
-  if(heading > 2*PI)
-    heading -= 2*PI;
-   
-  // Convert radians to degrees for readability.
-  float headingDegrees = heading * 180/M_PI; 
+  yawController.Compute();
   
   Serial.print(Angle_val.roll_accel,3);
   Serial.print(F(", "));
@@ -69,13 +61,10 @@ void loop()
   Serial.print(F(", "));
   Serial.print(Angle_val.roll,3);
   Serial.print(F(", "));
-  Serial.print(headingDegrees,3);
+  Serial.print(Angle_val.yaw,3);
   Serial.println(F(""));
   init_time = micros();
   }
-  
-  
-  //delay(1);
 }
 
 
@@ -92,6 +81,7 @@ void loop()
 
 void initAngleCalc(){
    IMU_init();
+   mag.begin();
  
   struct IMU IMU_val;
   
@@ -137,6 +127,25 @@ struct Angle AngleCalc(){
    angle_x_comp_prev = angle_x_comp;
    angle_y_comp_prev = angle_y_comp;
    
+   sensors_event_t event; 
+  mag.getEvent(&event);
+  float heading = atan2(event.magnetic.y, event.magnetic.x);
+  float declinationAngle = 0.227;
+  heading += declinationAngle;
+  // Correct for when signs are reversed.
+  if(heading < 0)
+    heading += 2*PI;
+    
+  // Check for wrap due to addition of declination.
+  if(heading > 2*PI)
+    heading -= 2*PI;
+    
+    if(heading > PI)
+    heading = PI-(heading-PI);
+   
+  // Convert radians to degrees for readability.
+  float headingDegrees = heading * 180/M_PI; 
+   
    struct Angle Angle_val;
    
    Angle_val.roll = angle_x_comp;
@@ -145,6 +154,7 @@ struct Angle AngleCalc(){
    Angle_val.pitch_accel = angle_y_accel;
    Angle_val.roll_gyro = angle_x_gyro;
    Angle_val.pitch_gyro = angle_y_gyro;
+   Angle_val.yaw = headingDegrees;
   
    return Angle_val;
 }

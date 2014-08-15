@@ -684,4 +684,12 @@ struct Angle
   double roll_gyro;
   double pitch_accel;
   double pitch_gyro;
+  double yaw;
+};
+
+struct Gain
+{
+  double Kp;
+  double Ki;
+  double Kd; 
 };
