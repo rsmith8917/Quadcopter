@@ -33,6 +33,7 @@ void setup()
 {      
     initAngleCalc();
     
+    //Initialize PID Controllers
     pitchController.SetMode(AUTOMATIC);
     pitchController.SetSampleTime(10);
     pitchController.SetOutputLimits(OutputLoLim,OutputHiLim);
