@@ -33,6 +33,8 @@ void setup()
 {      
     initAngleCalc();
     
+    pinMode(6, INPUT);
+    
     //Initialize PID Controllers
     pitchController.SetMode(AUTOMATIC);
     pitchController.SetSampleTime(10);
@@ -56,13 +58,13 @@ void loop()
   rollController.Compute();
   yawController.Compute();
   
-  Serial.print(Angle_val.roll_accel,3);
-  Serial.print(F(", "));
-  Serial.print(Angle_val.roll_gyro,3);
-  Serial.print(F(", "));
   Serial.print(Angle_val.roll,3);
   Serial.print(F(", "));
+  Serial.print(Angle_val.pitch,3);
+  Serial.print(F(", "));
   Serial.print(Angle_val.yaw,3);
+  Serial.print(F(", "));
+  Serial.print(Angle_val.altitude,3);
   Serial.println(F(""));
   init_time = micros();
   }
@@ -156,6 +158,8 @@ struct Angle AngleCalc(){
    Angle_val.roll_gyro = angle_x_gyro;
    Angle_val.pitch_gyro = angle_y_gyro;
    Angle_val.yaw = headingDegrees;
+   Angle_val.altitude = pulseIn(6, HIGH);
+   Angle_val.altitude = Angle_val.altitude/10;
   
    return Angle_val;
 }

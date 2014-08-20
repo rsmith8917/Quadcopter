@@ -685,6 +685,7 @@ struct Angle
   double pitch_accel;
   double pitch_gyro;
   double yaw;
+  double altitude;
 };
 
 struct Gain
